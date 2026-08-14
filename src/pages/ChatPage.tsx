@@ -1,4 +1,5 @@
 import {
+  useEffect,
   useMemo,
   useState,
   type KeyboardEvent,
@@ -34,6 +35,8 @@ interface Conversation {
   messages: Message[]
 }
 
+const CHAT_STORAGE_KEY = 'nexus-ai-chat-conversations'
+
 const createConversation = (): Conversation => ({
   id: `conversation-${Date.now()}-${Math.random()
     .toString(36)
@@ -42,6 +45,50 @@ const createConversation = (): Conversation => ({
   messages: [],
 })
 
+const loadConversations = (): Conversation[] => {
+  try {
+    const stored = window.localStorage.getItem(
+      CHAT_STORAGE_KEY,
+    )
+
+    if (!stored) {
+      return [createConversation()]
+    }
+
+    const parsed: unknown = JSON.parse(stored)
+
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      return [createConversation()]
+    }
+
+    const validConversations = parsed.filter(
+      (conversation): conversation is Conversation => {
+        if (
+          typeof conversation !== 'object' ||
+          conversation === null
+        ) {
+          return false
+        }
+
+        const candidate =
+          conversation as Partial<Conversation>
+
+        return (
+          typeof candidate.id === 'string' &&
+          typeof candidate.title === 'string' &&
+          Array.isArray(candidate.messages)
+        )
+      },
+    )
+
+    return validConversations.length > 0
+      ? validConversations
+      : [createConversation()]
+  } catch {
+    return [createConversation()]
+  }
+}
+
 export default function ChatPage() {
   const setCurrentView = useNavigationStore(
     (state) => state.setCurrentView,
@@ -49,15 +96,37 @@ export default function ChatPage() {
 
   const [conversations, setConversations] = useState<
     Conversation[]
-  >(() => [createConversation()])
+  >(() => loadConversations())
 
   const [activeConversationId, setActiveConversationId] =
-    useState(() => conversations[0].id)
+    useState<string | null>(null)
+
+  useEffect(() => {
+    setActiveConversationId((currentId) => {
+      if (
+        currentId &&
+        conversations.some(
+          (conversation) => conversation.id === currentId,
+        )
+      ) {
+        return currentId
+      }
+
+      return conversations[0]?.id ?? null
+    })
+  }, [conversations])
 
   const [input, setInput] = useState('')
   const [isThinking, setIsThinking] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+
+  useEffect(() => {
+    window.localStorage.setItem(
+      CHAT_STORAGE_KEY,
+      JSON.stringify(conversations),
+    )
+  }, [conversations])
 
   const activeConversation = conversations.find(
     (conversation) =>

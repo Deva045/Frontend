@@ -49,6 +49,35 @@ describe('ChatPage', () => {
     ).toBeInTheDocument()
   })
 
+  it('restores conversations from localStorage', () => {
+    window.localStorage.setItem(
+      'nexus-ai-chat-conversations',
+      JSON.stringify([
+        {
+          id: 'saved-conversation',
+          title: 'Saved conversation',
+          messages: [
+            {
+              id: 1,
+              role: 'user',
+              content: 'Remember this conversation',
+            },
+          ],
+        },
+      ]),
+    )
+
+    render(<ChatPage />)
+
+    expect(
+      screen.getAllByText('Saved conversation').length,
+    ).toBeGreaterThan(0)
+
+    expect(
+      screen.getByText('Remember this conversation'),
+    ).toBeInTheDocument()
+  })
+
   it('shows the back to home controls', () => {
     render(<ChatPage />)
 
