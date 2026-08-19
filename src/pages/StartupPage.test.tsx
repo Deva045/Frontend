@@ -11,19 +11,36 @@ import {
 import StartupPage from './StartupPage'
 import { useNavigationStore } from '../store/navigation'
 
-vi.mock('@react-three/fiber', () => ({
-  Canvas: ({
+vi.mock('@react-three/fiber', () => {
+  const ThreePrimitive = ({
     children,
   }: {
-    children: React.ReactNode
-  }) => (
-    <div data-testid="three-canvas">
-      {children}
-    </div>
-  ),
+    children?: React.ReactNode
+  }) => <>{children}</>
 
-  useFrame: () => {},
-}))
+  return {
+    Canvas: ({
+      children,
+    }: {
+      children: React.ReactNode
+    }) => (
+      <div data-testid="three-canvas">
+        {children}
+      </div>
+    ),
+
+    useFrame: () => {},
+
+    ambientLight: ThreePrimitive,
+    pointLight: ThreePrimitive,
+    group: ThreePrimitive,
+    mesh: ThreePrimitive,
+    sphereGeometry: ThreePrimitive,
+    torusGeometry: ThreePrimitive,
+    meshPhysicalMaterial: ThreePrimitive,
+    meshBasicMaterial: ThreePrimitive,
+  }
+})
 
 describe('StartupPage', () => {
   beforeEach(() => {

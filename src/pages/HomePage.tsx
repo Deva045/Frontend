@@ -1,3 +1,5 @@
+import type { LucideIcon } from 'lucide-react'
+import { useState, type KeyboardEvent } from 'react'
 import NexusOrb from '../components/background/NexusOrb'
 import { useNavigationStore } from '../store/navigation'
 
@@ -42,6 +44,7 @@ import {
   WandSparkles,
   Wifi,
   Zap,
+  Cpu,
 } from 'lucide-react'
 
 const navigation = [
@@ -212,7 +215,7 @@ function CircularMetric({
 }: {
   label: string
   value: string
-  icon: typeof Activity
+  icon: LucideIcon
 }) {
   return (
     <div className="rounded-xl border border-white/[0.06] bg-slate-950/40 p-3">
@@ -235,6 +238,32 @@ export default function HomePage() {
   const setCurrentView = useNavigationStore(
     (state) => state.setCurrentView,
   )
+
+  const openChatWithMessage = useNavigationStore(
+    (state) => state.openChatWithMessage,
+  )
+
+  const [homeMessage, setHomeMessage] = useState('')
+
+  const submitHomeMessage = () => {
+    const message = homeMessage.trim()
+
+    if (!message) {
+      return
+    }
+
+    setHomeMessage('')
+    openChatWithMessage(message)
+  }
+
+  const handleHomeMessageKeyDown = (
+    event: KeyboardEvent<HTMLInputElement>,
+  ) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault()
+      submitHomeMessage()
+    }
+  }
 
   return (
     <div className="relative z-[1] min-h-screen w-full overflow-hidden text-slate-100">
@@ -266,6 +295,10 @@ export default function HomePage() {
                 onClick={() => {
                   if (label === 'Chat') {
                     setCurrentView('chat')
+                  } else if (label === 'Voice') {
+                    setCurrentView('voice')
+                  } else if (label === 'Vision') {
+                    setCurrentView('vision')
                   }
                 }}
                 className={`flex h-10 w-full items-center gap-3 rounded-xl px-3 text-left text-sm transition ${
@@ -516,14 +549,17 @@ export default function HomePage() {
 
                       <div className="relative z-[3] mt-7 flex w-full max-w-[250px] flex-col gap-3 sm:w-[250px]">
                         <button
-                          onClick={() => setCurrentView('chat')}
+                          onClick={() => openChatWithMessage('')}
                           className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-blue-500 px-4 text-sm font-semibold text-white shadow-[0_10px_30px_rgba(124,58,237,0.25)] transition hover:-translate-y-0.5 hover:brightness-110"
                         >
                           <MessageSquare size={17} />
                           Start a New Chat
                         </button>
 
-                        <button className="flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-cyan-400/20 bg-slate-950/80 px-4 text-sm font-medium text-slate-200 shadow-[0_8px_25px_rgba(0,0,0,0.2)] backdrop-blur-md transition hover:-translate-y-0.5 hover:border-cyan-400/35 hover:bg-slate-900/90">
+                        <button
+                          onClick={() => setCurrentView('voice')}
+                          className="flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-cyan-400/20 bg-slate-950/80 px-4 text-sm font-medium text-slate-200 shadow-[0_8px_25px_rgba(0,0,0,0.2)] backdrop-blur-md transition hover:-translate-y-0.5 hover:border-cyan-400/35 hover:bg-slate-900/90"
+                        >
                           <Mic size={17} className="text-cyan-300" />
                           Voice Mode
                         </button>
@@ -535,6 +571,11 @@ export default function HomePage() {
                         <input
                           aria-label="Ask Nexus"
                           type="text"
+                          value={homeMessage}
+                          onChange={(event) =>
+                            setHomeMessage(event.target.value)
+                          }
+                          onKeyDown={handleHomeMessageKeyDown}
                           placeholder="Ask Nexus AI anything..."
                           className="min-w-0 flex-1 bg-transparent px-2 text-sm text-white outline-none placeholder:text-slate-600"
                         />
@@ -554,8 +595,10 @@ export default function HomePage() {
                         </button>
 
                         <button
+                          onClick={submitHomeMessage}
+                          disabled={!homeMessage.trim()}
                           aria-label="Send message"
-                          className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-violet-600 to-blue-500 text-white shadow-[0_0_25px_rgba(124,58,237,0.3)] transition hover:brightness-110"
+                          className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-violet-600 to-blue-500 text-white shadow-[0_0_25px_rgba(124,58,237,0.3)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
                         >
                           <Send size={17} />
                         </button>
@@ -682,7 +725,7 @@ export default function HomePage() {
                       <CircularMetric
                         label="CPU Usage"
                         value="23%"
-                        icon={CpuIcon}
+                        icon={Cpu}
                       />
                       <CircularMetric
                         label="RAM Usage"
@@ -843,6 +886,3 @@ export default function HomePage() {
   )
 }
 
-function CpuIcon({ size = 18 }: { size?: number }) {
-  return <Bot size={size} />
-}

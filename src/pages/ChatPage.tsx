@@ -94,12 +94,25 @@ export default function ChatPage() {
     (state) => state.setCurrentView,
   )
 
+  const pendingChatMessage = useNavigationStore(
+    (state) => state.pendingChatMessage,
+  )
+
+  const clearPendingChatMessage = useNavigationStore(
+    (state) => state.clearPendingChatMessage,
+  )
+
   const [conversations, setConversations] = useState<
     Conversation[]
   >(() => loadConversations())
 
   const [activeConversationId, setActiveConversationId] =
     useState<string | null>(null)
+
+  const [input, setInput] = useState('')
+  const [isThinking, setIsThinking] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
 
   useEffect(() => {
     setActiveConversationId((currentId) => {
@@ -115,11 +128,6 @@ export default function ChatPage() {
       return conversations[0]?.id ?? null
     })
   }, [conversations])
-
-  const [input, setInput] = useState('')
-  const [isThinking, setIsThinking] = useState(false)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
 
   useEffect(() => {
     window.localStorage.setItem(
@@ -164,6 +172,7 @@ export default function ChatPage() {
       conversation,
       ...current,
     ])
+
     setActiveConversationId(conversation.id)
     setInput('')
     setIsThinking(false)
@@ -213,8 +222,12 @@ export default function ChatPage() {
     )
   }
 
-  const sendMessage = () => {
-    const trimmed = input.trim()
+  const sendMessage = (messageOverride?: string) => {
+    const trimmed = (
+      messageOverride !== undefined
+        ? messageOverride
+        : input
+    ).trim()
 
     if (!trimmed || isThinking || !activeConversation) {
       return
@@ -268,6 +281,24 @@ export default function ChatPage() {
     }, 700)
   }
 
+  useEffect(() => {
+    if (!pendingChatMessage || !activeConversation) {
+      return
+    }
+
+    const message = pendingChatMessage
+
+    clearPendingChatMessage()
+
+    window.requestAnimationFrame(() => {
+      sendMessage(message)
+    })
+  }, [
+    pendingChatMessage,
+    activeConversation,
+    clearPendingChatMessage,
+  ])
+
   const handleKeyDown = (
     event: KeyboardEvent<HTMLInputElement>,
   ) => {
@@ -282,7 +313,6 @@ export default function ChatPage() {
   return (
     <div className="relative z-[1] min-h-screen w-full bg-[#030712] text-white">
       <div className="flex min-h-screen">
-        {/* Mobile overlay */}
         {isSidebarOpen && (
           <button
             aria-label="Close sidebar overlay"
@@ -291,7 +321,6 @@ export default function ChatPage() {
           />
         )}
 
-        {/* Conversation Sidebar */}
         <aside
           className={`fixed inset-y-0 left-0 z-40 flex w-[290px] shrink-0 flex-col border-r border-white/[0.07] bg-[#050b1d]/98 px-4 py-5 backdrop-blur-2xl transition-transform duration-200 lg:static lg:z-auto lg:translate-x-0 ${
             isSidebarOpen
@@ -433,9 +462,7 @@ export default function ChatPage() {
           </div>
         </aside>
 
-        {/* Main Chat */}
         <main className="flex min-w-0 flex-1 flex-col">
-          {/* Header */}
           <header className="flex h-[70px] shrink-0 items-center border-b border-white/[0.07] px-4 sm:px-6 lg:px-8">
             <button
               aria-label="Open conversation sidebar"
@@ -482,7 +509,6 @@ export default function ChatPage() {
             </button>
           </header>
 
-          {/* Chat content */}
           <div className="mx-auto flex min-h-0 w-full max-w-[1000px] flex-1 flex-col px-5 py-6 sm:px-8">
             {!hasMessages ? (
               <div className="flex flex-1 flex-col items-center justify-center pb-20 text-center">
@@ -604,7 +630,6 @@ export default function ChatPage() {
               </div>
             )}
 
-            {/* Composer */}
             <div className="shrink-0 pb-2 pt-4">
               <div className="rounded-2xl border border-white/[0.08] bg-[#081229]/90 p-2 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-xl">
                 <div className="flex min-h-[58px] items-center gap-2">
@@ -635,7 +660,7 @@ export default function ChatPage() {
                   </button>
 
                   <button
-                    onClick={sendMessage}
+                    onClick={() => sendMessage()}
                     disabled={!input.trim() || isThinking}
                     aria-label="Send message"
                     className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 to-blue-500 text-white shadow-[0_0_25px_rgba(124,58,237,0.25)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
